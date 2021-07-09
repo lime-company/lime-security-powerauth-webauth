@@ -10,8 +10,8 @@ If you prefer a faster setup, consider trying our [Docker images](https://github
 
 The Web Flow application has following dependencies which should be deployed before deploying Web Flow:
 - [PowerAuth Server](https://developers.wultra.com/docs/develop/powerauth-server/Deploying-PowerAuth-Server)
-- [PowerAuth Push Server](https://developers.wultra.com/docs/2019.05/powerauth-push-server/Deploying-Push-Server)
-- [PowerAuth Admin](https://developers.wultra.com/docs/2019.05/powerauth-admin/Deploying-PowerAuth-Admin)
+- [PowerAuth Push Server](https://developers.wultra.com/docs/develop/powerauth-push-server/Deploying-Push-Server)
+- [PowerAuth Admin](https://developers.wultra.com/docs/develop/powerauth-admin/Deploying-PowerAuth-Admin)
 
 ### Create required user and group
 
@@ -64,22 +64,26 @@ Copy all resources which you want to modify into this folder. See resources in t
 
 ### Add required libraries
 
-#### Oracle:
-Copy "ojdbc6.jar" to "/opt/tomcat/lib" folder, so that the Oracle DB connector is on classpath. You can get the required JAR here:
-
-https://mvnrepository.com/artifact/oracle/ojdbc6
-
-Note that the JDBC driver version needs to be supported by installed database.
+The installation instructions are similar for all databases. Note that the JDBC driver version needs to be supported by installed database.
 Additional application properties may be required to be configured based on database version.
+
+#### Oracle:
+
+Copy "ojdbc-[version].jar" to "/opt/tomcat/lib" folder, so that the Oracle DB connector is on classpath. You can get the required JAR here:
+
+https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc8
 
 #### MySQL:
 
 Copy "mysql-connector-java-[version].jar" to "/opt/tomcat/lib" folder, so that the MySQL DB connector is on classpath. You can get the required JAR here:
 
-http://central.maven.org/maven2/mysql/mysql-connector-java
+https://mvnrepository.com/artifact/mysql/mysql-connector-java
 
-Note that the JDBC driver version needs to be supported by installed database. 
-Additional application properties may be required to be configured based on database version.
+#### PostgreSQL:
+
+Copy "mysql-connector-java-[version].jar" to "/opt/tomcat/lib" folder, so that the MySQL DB connector is on classpath. You can get the required JAR here:
+
+https://mvnrepository.com/artifact/org.postgresql/postgresql
 
 #### Other databases
 

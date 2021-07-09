@@ -83,7 +83,7 @@ public class AuthenticationController {
     @Operation(summary = "Authenticate using a credential")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Authentication result sent in response"),
-            @ApiResponse(responseCode = "400", description = "Invalid request, error codes: REQUEST_VALIDATION_FAILED, INVALID_REQUEST, USER_IDENTITY_NOT_FOUND, OPERATION_NOT_FOUND, OPERATION_NOT_FOUND, CREDENTIAL_DEFINITION_NOT_FOUND, INVALID_CONFIGURATION, OPERATION_ALREADY_FINISHED, OPERATION_ALREADY_CANCELED, OPERATION_ALREADY_FAILED, OPERATION_NOT_VALID, AUTH_METHOD_NOT_FOUND, OPERATION_NOT_VALID"),
+            @ApiResponse(responseCode = "400", description = "Invalid request, error codes: REQUEST_VALIDATION_FAILED, INVALID_REQUEST, USER_IDENTITY_NOT_FOUND, OPERATION_NOT_FOUND, CREDENTIAL_NOT_FOUND, CREDENTIAL_DEFINITION_NOT_FOUND, INVALID_CONFIGURATION, OPERATION_ALREADY_FINISHED, OPERATION_ALREADY_CANCELED, OPERATION_ALREADY_FAILED, OPERATION_NOT_VALID, AUTH_METHOD_NOT_FOUND, ENCRYPTION_FAILED"),
             @ApiResponse(responseCode = "500", description = "Unexpected error")
     })
     @RequestMapping(value = "credential", method = RequestMethod.POST)

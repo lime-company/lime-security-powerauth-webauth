@@ -12,9 +12,9 @@
 - [Next Step Server](./Next-Step-Server.md)
 - [TPP Engine](./Tpp-Engine.md)
 - [Data Adapter](./Data-Adapter.md)
-- [PowerAuth Server](https://github.com/wultra/powerauth-server)
-- [PowerAuth Admin](https://github.com/wultra/powerauth-admin)
-- [PowerAuth Push Server](https://github.com/wultra/powerauth-push-server)
+- [PowerAuth Server](https://developers.wultra.com/components/powerauth-server)
+- [PowerAuth Admin](https://developers.wultra.com/components/powerauth-admin)
+- [PowerAuth Push Server](https://developers.wultra.com/components/powerauth-push-server)
 
 **REST APIs**
 

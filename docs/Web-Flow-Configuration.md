@@ -133,12 +133,12 @@ springdoc.swagger-ui.disable-swagger-default-url=true
 spring.application.name=powerauth-webflow
 ```
 
-Encryption of user passwords during transport can be configured using following properties:
+Encryption of user passwords during transport (end-to-end encryption) can be configured using following properties:
 ```
 # Configuration of Password Encryption
 powerauth.webflow.password.protection.type=PASSWORD_ENCRYPTION_AES
 powerauth.webflow.password.encryption.transformation=AES/CBC/PKCS7Padding
-powerauth.webflow.password.encryption.key=[Secret Base 64 encoded 32-bit key, you generate it using code below and keep it secure]
+powerauth.webflow.password.encryption.key=[Secret Base64-encoded 32-bit key, you can generate it using code below and keep it secure]
 ```
 
 The configuration specifies that user password should be encrypted using AES in CBC mode with PKCS#7 padding. 
@@ -247,6 +247,28 @@ springdoc.default-produces-media-type=application/json
 # Set the Spring application name
 spring.application.name=powerauth-nextstep
 ```
+
+Encryption of user passwords during transport (end-to-end encryption) can be configured using following property:
+```properties
+powerauth.nextstep.e2eEncryption.key=[Secret Base64-encoded 32-bit key, same as the key used in Web Flow]
+```
+
+Encryption of sensitive database records can be configured using following property:
+
+```properties
+powerauth.nextstep.db.master.encryption.key=[Secret Base64-encoded 32-bit key, you can generate it using code below and keep it secure]
+```
+
+The random encryption key can be generated using following code:
+```java
+byte[] randomBytes = new byte[32];
+new SecureRandom().nextBytes(randomBytes);
+String encryptionKey = BaseEncoding.base64().encode(randomBytes);
+```
+
+<!-- begin box warning -->
+Do not use the same key for end-to-encryption and database record encryption. Store the keys securely, ideally using a vault mechanism._
+<!-- end -->
 
 ## Data Adapter
 At minimum the following configuration properties should be updated based on deployment:

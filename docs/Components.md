@@ -1,6 +1,6 @@
 # Web Flow Components
 
-Web Flow consists of following compoments:
+Web Flow consists of following components:
 - [Web Flow Server](#web-flow-server)
 - [Next Step Server](#next-step-server)
 - [TPP Engine](#tpp-engine)  
@@ -12,7 +12,7 @@ Web Flow consists of following compoments:
 
 This chapter provides an introduction to each of these components and describes the role they serve in the authentication and authorization process.
 
-To get an overview of how these compoments are related and where they are deployed in the network infrastructure, see the [Web Flow Architecture diagram](./Web-Flow-Architecture.md).
+To get an overview of how these components are related and where they are deployed in the network infrastructure, see the [Web Flow Architecture diagram](./Web-Flow-Architecture.md).
 
 We will refer to the "authentication and authorization process" as "authentication process" for simplification.
 
@@ -33,16 +33,16 @@ Web Flow Server consists of following parts:
 Next Step Server stores information about operations and resolves the next step for each operation. Various operations with different authentication flows can be configured in Next Step Server.
 
 During the authentication process following communication occurs between Web Flow Server and Next Step Server:
-- **Operation is created** - Web Flow Server sends a request to Next Step Server to create an operation and decide its next step. Next Step Server decides the next step of the operation based on its configuration for current operation.
+- **Operation is created** - Web Flow Server sends a request to Next Step Server to create an operation and decide its next step. Next Step Server decides the next step of the operation based on its configuration for current operation. The operation can be also created using any other backend application by calling the Next Step server directly.
 - **Operation is updated** - user interacts with Web Flow (e.g. submits the login form) and Web Flow Server sends a request to update the existing operation with result of the current step. Next Step server decides the next step based of the operation based on its configuration for current operation and the result of the authentication step.
 
 Based on Next Step response either of the following actions happens in Web Flow:
 - a new page is shown to user representing a new authentication step
-- same page is shown to the user with an error (the user didn't make any progress in operation)
-- the authentication process is completed with a redirect
+- same page is shown to the user with an error (the user didn't make any progress in the operation)
+- the authentication process is completed with a redirect containing a successful result
 - an error is shown followed by a redirect with error details
 
-The Next Step server provides also credential and OTP authentication services and services for managing user identities.
+The Next Step server provides also credential and OTP authentication services and services for managing user identities. In case user identities are stored in a remote backend, the Next Step proxies all requests for authentication and user details by calling the Data Adapter methods which interact with the remote backend.
 
 ## Data Adapter
 
@@ -88,7 +88,7 @@ For more information see our [Mobile Token product page](https://www.wultra.com/
 
 ## PowerAuth Server
 
-PowerAuth Server is used as a backend in authorization steps which require signature verification, token verification or access to the secure vault. These services are required by the Mobile Token application. PowerAuth Server is deployed in internal network and does not have a public facing API, for this reason all requests to PowerAuth Server are handled by Web Flow Server.
+PowerAuth Server is used as a backend in authorization steps which require signature verification, token verification, or access to the secure vault. These services are required by the Mobile Token application. PowerAuth Server is deployed in internal network and does not have a public facing API, for this reason all requests to PowerAuth Server are handled by Web Flow Server.
 
 For more information see [the PowerAuth Server project](https://github.com/wultra/powerauth-server).
 

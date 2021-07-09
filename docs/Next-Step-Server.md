@@ -18,11 +18,11 @@ Next Step Server implements following functionality:
   - create an authentication method
   - listing available authentication methods both general and user-specific
   - enabling/disabling authentication methods per user including their configuration (configuration is required for the [Mobile Token](./Mobile-Token-Configuration.md))
-  - get list a of authentication methods currently enabled for the user  
+  - get a list of authentication methods currently enabled for the user  
   - delete an authentication method
 - management of operations
   - create a new operation
-  - update an operation based on next step decision
+  - update an operation based on the next step decision
   - retrieve operation detail
   - list pending operations for user
   - retrieve operation configuration for an operation or all defined operations
@@ -59,7 +59,7 @@ Next Step Server implements following functionality:
 - management of OTP definitions
 - configuration of hashing algorithm parameters
 - secure storage of user credentials
-- secure storage of OTP authorization codes, their delivery and management
+- secure storage of OTP authorization codes, their delivery via Data Adapter and OTP state management
 - storage of failed attempt counters, their update and reset
 - configuration of next step definitions
 - definition of user roles

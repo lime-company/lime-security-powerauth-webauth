@@ -10,15 +10,15 @@ The terminology described below is used widely in documentation, Web Flow databa
 
 Authentication is the process of verifying the identity of a user.
 
-Web Flow authentication step identifies the user and stores the user identity.
+Web Flow authentication step identifies the user and stores the user identity as parameter `user ID` for the current operation.
 
-_A typical example of authentication is signing in using a login form with username and password._
+_A typical example of authentication is signing in using a login form with username and password. Another example is signing in by specifying the username and verifying user password together with an OTP code delivered by SMS._ 
 
 ### Authorization
 
 Authorization is the process of verifying permission granted by an authority.
 
-Web Flow authorization step verifies that the user grants a permission to perform an operation.
+Web Flow authorization step verifies that the user grants a permission to perform current operation.
 
 _A typical example of authorization is verifying that user grants a permission to process a payment using PIN code/fingerprint/SMS code on a mobile device owned by the user._
 
@@ -33,7 +33,8 @@ _Web Flow is used for authentication and authorization in order to secure anothe
 Authentication and authorization process in Web Flow is a process which includes one or more authentication steps. Given the security requirements of the operation different authentication and/or authorization steps are required.
 
 _Example of a single step process (login):_
-- _User authentication using a login form with username and password._
+- _User authentication using a login form with username and password (non-SCA, see below)._
+- _User authentication using username, password, and an OTP code (SCA, see below)._
 
 _Example of a process with multiple steps (payment authorization):_
 - _User authentication using a login form with username and password._
@@ -61,17 +62,17 @@ The SCA requirement comes into force from 14 September 2019. The requirement ens
 to increase the security of electronic payments. Physical card transactions already commonly have what could be termed strong customer authentication in the EU (Chip and PIN), 
 but this has not generally been true for Internet transactions across the EU prior to the implementation of the requirement.
 
-## Web Flow Terminology
+## Web Flow and Next Step Terminology
 
 ### Operation
 
-A new operation is created with every authentication process in Web Flow. The operation is mapped 1:1 to the OAuth 2.0 dance.
+A new operation is created in the Next Step application with every authentication process in Web Flow. The operation is mapped 1:1 to the OAuth 2.0 dance.
 
 There are two possible outcomes of an operation:
-- **Operation succeeds** - the HTTP session becomes authenticated and the user is redirected
-- **Operation fails** - the HTTP session is not authenticated, an error is displayed and the user is redirected with an error
+- **Operation succeeds** - the HTTP session becomes authenticated and the user is redirected to the original application with a successful result
+- **Operation fails** - the HTTP session is not authenticated, an error is displayed and the user is redirected to the original application with an error
 
-The operation succeeds only when all required authentication/authorization steps are successfully completed.
+The operation succeeds only when all required authentication/authorization steps are successfully completed within operation timeout.
 
 The operation may fail due to different reasons, such as:
 - An authentication/authorization step fails (e.g. signature is not valid).
@@ -82,7 +83,7 @@ The operation may fail due to different reasons, such as:
 
 ### Operation ID
 
-Each operation is identified by a unique operation ID in [UUID format](https://en.wikipedia.org/wiki/Universally_unique_identifier). The operation ID is used during the authentication process to access status of the operation and update the operation in Next Step Server.
+Each operation is identified by a unique operation ID, which is typically stored in [UUID format](https://en.wikipedia.org/wiki/Universally_unique_identifier). The operation ID is used during the authentication process to access status of the operation and update the operation in Next Step Server.
 
 ### Operation name
 
@@ -163,7 +164,7 @@ Whenever operation progresses to the next step, previous status of operation is 
 
 ### Operation review
 
-Operation review is a special non-SCA authentication step which handles review of operation form data and next authentication method choice. This step is executed after user is authenticated and the next step is an authorization step.
+Operation review is a special non-SCA authentication step which handles review of operation form data and next authentication method choice. This step is executed after user is authenticated, and the next step is an authorization step.
 
 ### Organization
 
@@ -178,11 +179,15 @@ See chapter [Configuring Next Step](Configuring-Next-Step.md) for more details.
 
 ### Authentication method choice
 
-The user becomes authenticated and there are multiple choices available for the next authentication method (which is usually performing authorization, not authentication). The next authentication method is executed based on user choice. This approach is used in non-SCA authentication methods.
+When there are multiple choices available for the next authentication method the user is provided with a choice of the next authentication method. The chosen authentication method is stored for the current operation step.
+
+### Authentication method downgrade
+
+It is possible to downgrade an authentication method, e.g., when the user has a mobile token application configured, but for some reason prefers to use a one time password for authentication. In this case, the authentication method is downgraded from the `POWERAUTH_TOKEN` authentication method to the `SMS_KEY` authentication method.
 
 ### Authentication instrument
 
-The user has a choice of using different authentication instruments (SMS, mobile token, hardware token, etc.). The chosen authentication instrument influences how authentication / authorization is done. This approach is used in SCA authentication methods.
+The user has a choice of using different authentication instruments (SMS key, mobile token, hardware token, etc.). The chosen authentication instrument influences how authentication / authorization is performed.
 
 ### Next step of an operation
 
@@ -192,15 +197,61 @@ Each operation consists of multiple steps. The next step of the operation is dec
 - Available authentication methods (some methods may be disabled or temporarily unavailable).
 - Status of the operation (operation may time out, authentication method may fail because of too many attempts, etc.).
 
-### Next step definition
+### Next Step -- step definitions
 
 Before starting Next Step Server the next step definition has to be defined for all operation names. All steps are defined in database table `ns_step_definition`.
 
 See chapter [Configuring Next Step](Configuring-Next-Step.md) for more details.
 
-### Next step user preferences
+### Next Step -- user preferences
 
-Next step user preferences store configuration for different authentication methods, for instance activation configured for mobile token.
+Next Step user preferences store configuration for different authentication methods, for instance an activation ID configured for the mobile token application.
+
+### Next Step -- application
+
+Next Step applications are applications which are authenticated against Next Step, such as an internet banking application, or an online shop application.
+
+### Next Step -- user identity
+
+Next Step user identity stores information about the user including the user identifier (parameter `user ID`) which uniquely identifies the user. Additional user information is stored with the user identity, such as credentials, one time passwords, contact information, user aliases for external systems, and user roles. The user identity can be managed by the Next Step application, or it can be managed externally, in this case Data Adapter proxy is enabled so that all user identity queries are performed using Data Adapter.
+
+### Next Step -- authentication
+
+When the user identity is managed by the Next Step application, Next Step provides RESTful services for authenticating users using credentials, one time passwords, or a combination of these two methods. Authentication results are stored in the Next Step database.
+
+### Next Step -- credential hashing
+
+Next Step application hashes the user credentials using the Argon2 hashing algorithm. The credential verification is performed by comparing the hash of the credential with the stored hash. The hashing algorithm parameters can be changed and in this case the credential hash is recreated with new parameters during the next user authentication and stored in the database.
+
+### Next Step -- database record encryption
+
+The database record encryption can be enabled for credentials. A symmetric encryption key must be configured, once it is configured and credential record encryption in database is enabled, the credentials are encrypted by Next Step. This functionality can be used together with credential hashing. When an encryption configuration change is detected, the credential record is encrypted once again using new parameters during the next user authentication and encrypted credential value is stored in the database.
+
+### Next Step - end-to-end encryption
+
+Credentials can be optionally encrypted when received via a RESTful API request or sent via a RESTful API response. A symmetric encryption key must be configured, once it is configured and end-to-end encryption is enabled, all credentials are sent and received in encrypted form.
+
+### Next Step -- credential policy
+
+Next Step credential policy describes requirements on stored credentials, such as required length, password generation rules, password validation rules, expiration time, password history check, etc. The credential policy can be referenced using credential policy name.
+
+### Next Step -- credential definition
+
+Next Step credential definition binds the Next Step application, credential policy, and hashing configuration. It configures credential parameters such as database record encryption, end-to-end encryption and Data Adapter proxy mode. The credential definition can be referenced using credential definition name.
+
+### Next Step -- one time password policy
+
+Next Step one time password policy describes requirements on stored one time passwords, such as required length, number of failed attempts, expiration time, etc. The one time password policy can be referenced using one time password policy name.
+
+### Next Step -- one time password definition
+
+Next Step one time password definition binds the Next Step application and the one time password policy. It configures one time password parameters such as database record encryption and Data Adapter proxy mode. The one time password definition can be referenced using one time password definition name.
+
+### PowerAuth operations
+
+Next Step operations may be complex and consist of multiple smaller indiviual operations. For instance, the PSD2 payment operation consists of two operations: login and payment approval. When these smaller operations are authenticated using PowerAuth protocol, each such operation can be stored in PowerAuth server. Next Step and Web Flow manage the PowerAuth operations when this functionality is enabled and update their status based on authentication result. Operation template must be configured in PowerAuth server for this use case.
+
+_Note: PowerAuth operations use `operation type` instead of `operation name` to identify the type of the operation._
 
 ### Authorization failure count
 

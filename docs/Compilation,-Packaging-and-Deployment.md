@@ -1,6 +1,6 @@
 # Compilation, Packaging and Deployment
 
-Web Flow uses Maven for compilation and packaging. Java 11 should be used to compile Web Flow.
+Web Flow uses Maven for compilation and packaging. Java 11 or newer should be used to compile Web Flow.
 
 Web Flow can be deployed to any Java web container (such as Tomcat) using war artifacts produced during compilation.
 
@@ -41,5 +41,4 @@ In case you want to use the Third Party Provider engine functionality, deploy th
 You can test the web flow demo application by navigating to: http://localhost:8080/powerauth-webflow-client
 
 * Use the "Login" action to test the user authentication. The Data Adapter sample project uses "test" as password for any username.
-* Use the "Payment (DEMO)" action to test payment authorization. You will need to enable POWERAUTH_TOKEN authentication method for the user who will authorize the payment (using [Next Step REST API](./Next-Step-Server-REST-API-Reference.md#enable-an-authentication-method-for-given-user)).
 * Use the "Authorization" action to test operation authorization. In order to test this action you will need to create an operation and obtain its operationId (using [Next Step REST API](./Next-Step-Server-REST-API-Reference.md#create-an-operation)).

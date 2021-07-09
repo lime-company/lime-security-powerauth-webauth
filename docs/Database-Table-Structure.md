@@ -2,7 +2,7 @@
 
 Web Flow requires a database to store data. It is tested with Oracle, MySQL and PostgreSQL. It should be easily adapted to any other SQL database which supports JDBC.
 
-Web Flow can coexist with PowerAuth in the same database schema or it can use a different database schema.
+Web Flow can coexist with PowerAuth in the same database schema, or it can use a different database schema.
 
 ## Database Scripts
 
@@ -45,7 +45,7 @@ Web Flow can coexist with PowerAuth in the same database schema or it can use a 
 
 - **ns_operation** - the table stores details of Web Flow operations. Only the last status is stored in this table, changes of operations are stored in table ns_operation_history.
 
-- **ns_operation_config** - the table stores configuration of Web Flow operations including configuration of mobile templates.
+- **ns_operation_config** - the table stores configuration of Web Flow operations including configuration of mobile templates. Data in this table needs to be loaded before Web Flow is started.
 
 - **ns_operation_method_config** - the table stores configuration of authentication methods per operation name.
 
@@ -79,15 +79,15 @@ Web Flow can coexist with PowerAuth in the same database schema or it can use a 
 
 - **ns_credential_definition** - the table stores definitions of credentials with reference to credential policies and applications.
 
-- **ns_otp_definition** - the table stores definitions of one time passwords with reference to credential policies and applications.
+- **ns_otp_definition** - the table stores definitions of one time passwords with reference to one time password policies and applications.
 
-- **ns_credential_storage** - the table stores credential values, counters and other data related to credentials.
+- **ns_credential_storage** - the table stores credential values, attempt counters and other data related to credentials.
 
 - **ns_credential_history** - the table stores historical values of credentials.
 
-- **ns_otp_storage** - the table stores one time password values, counters and other data related to one time passwords.
+- **ns_otp_storage** - the table stores one time password values, attempt counters and other data related to one time passwords.
 
-- **ns_authentication** - the table stores  authentication attempts.
+- **ns_authentication** - the table stores user authentication attempts.
 
 ### Database Tables for the Data Adapter
 

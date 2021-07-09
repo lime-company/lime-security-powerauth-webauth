@@ -1,6 +1,6 @@
 # Configuring Next Step
 
-During Web Flow deployment authentication methods and next step definitions need to be customized. The customization is currently done using SQL.
+During Web Flow and Next Step deployment authentication methods, organizations, operation configurations, and next step definitions need to be customized. In case Next Step is used to store user identities, additional configuration of credential and one time password policies and definitions is required. The customization is usually done using SQL, however a RESTful API is also available for each of the configuration steps.
 
 ## Configuration of Authentication Methods
 
@@ -136,7 +136,9 @@ based on keys `organization.retail` and `organization.sme`. The user can switch 
 The `RETAIL` organization is the default one (it is preselected in the UI). The order of displayed organizations is defined as
 `RETAIL`, `SME` using the last parameter.
 
-_Warning: In case you configure multiple organizations make sure the user ID used in PowerAuth Web Flow, PowerAuth Server and PowerAuth Push Server is unique across all organizations and it is consistent in all PowerAuth backends. You can achieve this requirement by assigning unique user IDs in different organizations during user authentication. Alternatively the uniqueness requirement can be achieved by adding a prefix to all user IDs based on the organization against which the user was authenticated (e.g. `RETAIL.12345678`)._
+<!-- begin box warning -->
+In case you configure multiple organizations make sure the user ID used in PowerAuth Web Flow, PowerAuth Server and PowerAuth Push Server is unique across all organizations, and it is consistent in all PowerAuth backends. You can achieve this requirement by assigning unique user IDs in different organizations during user authentication. Alternatively the uniqueness requirement can be achieved by adding a prefix to all user IDs based on the organization against which the user was authenticated (e.g. `RETAIL.12345678`).
+<!-- end -->
 
 Each organization requires following configuration:
 - `organization_id` - an identifier of the organization, such as `RETAIL` or `SME`

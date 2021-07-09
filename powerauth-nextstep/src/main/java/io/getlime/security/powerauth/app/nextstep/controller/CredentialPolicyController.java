@@ -75,7 +75,7 @@ public class CredentialPolicyController {
     @Operation(summary = "Create a credential policy")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Credential policy was created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request, error codes: REQUEST_VALIDATION_FAILED, CREDENTIAL_DEFINITION_NOT_FOUND"),
+            @ApiResponse(responseCode = "400", description = "Invalid request, error codes: REQUEST_VALIDATION_FAILED, INVALID_REQUEST, CREDENTIAL_POLICY_ALREADY_EXISTS"),
             @ApiResponse(responseCode = "500", description = "Unexpected error")
     })
     @RequestMapping(method = RequestMethod.POST)

@@ -1,6 +1,6 @@
 # Data Adapter RESTful API Reference
 
-_Warning: this page is currently being revised for version `1.1.0`. For most up-to-date documentation see the application Swagger at: http[s]://[host]:[port]/powerauth-data-adapter/swagger-ui.html_
+<!-- template api -->
 
 PowerAuth Web Flow server and Next Step server communicate with the Data Adapter via a REST API. This chapter defines the REST API implemented by Data Adapter and consumed by the Web Flow Server.
 
@@ -10,12 +10,17 @@ Following topics are covered in this chapter:
 - [User lookup](#user-lookup)
 - [User authentication](#user-authentication)
 - [User information](#user-information)
+- [Initialize an authentication method](#initialize-an-authentication-method)
 - [Decorate form data](#decorate-form-data)
 - [Form data change notification](#formdata-change-notification)
 - [Operation change notification](#operation-change-notification)
-- [Generate authorization SMS](#generate-sms-authorization-code)
+- [Create implicit login operation](#create-implicit-login-operation)
+- [Operation mapping](#operation-mapping)
+- [Generate and send authorization SMS](#generate-and-send-sms-authorization-code)
+- [Send authorization SMS](#send-sms-authorization-code)
 - [Verify authorization SMS code](#verify-authorization-sms-code)
 - [Verify authorization SMS code and password](#verify-authorization-sms-code-and-password)
+- [Verify a client TLS certificate](#verify-a-client-tls-certificate)
 - [Initialize OAuth 2.0 consent form](#initialize-oauth-20-consent-form)
 - [Create OAuth 2.0 consent form](#create-oauth-20-consent-form)
 - [Validate OAuth 2.0 consent form](#validate-oauth-20-consent-form)
@@ -28,7 +33,7 @@ You can access the generated REST API documentation in deployed Data Adapter:
 http[s]://[host]:[port]/powerauth-data-adapter/swagger-ui.html
 ```
 
-## Status codes and error handling
+## Status Codes and Error Handling
 
 PowerAuth compliant Data Adapter uses a unified format for error response body, accompanied with an appropriate HTTP status code. Besides the HTTP error codes that application server may return regardless of server application (such as 404 when resource is not found or 503 when server is down).
 
@@ -46,10 +51,15 @@ All error responses that are produced by the Data Adapter should have following 
 
 Expected error messages are explained in details in individual sections.
 
-## Service Status
+## Service API
+
+<!-- begin api GET /push/service/status -->
+### Service Status
 
 Get a system status response, with basic information about the running application.
 
+<!-- begin remove -->
+### Service status - parameters
 <table>
 <tr>
 <td>Method</td>
@@ -60,8 +70,17 @@ Get a system status response, with basic information about the running applicati
 <td>/api/service/status</td>
 </tr>
 </table>
+<!-- end -->
 
-#### **Response**
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - system status successfully retrieved |
+| 404  | Not found - application is not running |
+| 500  | Server errors - unexpected server error |
+
+#### Service status - response
 
 ```json
 {
@@ -83,22 +102,28 @@ Get a system status response, with basic information about the running applicati
 - `version` - Version of Data Adapter.
 - `buildTime` - Time when the powerauth-data-adapter.war file was built.
 - `timestamp` - Response timestamp.
+<!-- end -->
 
-## User Lookup
+## User API
 
-Performs a lookup of user account. The specified username is converted into a user ID. The username and user ID values 
-may be identical, however in typical deployments they are different.
+<!-- begin api POST /api/auth/user/lookup -->
+### User Lookup
 
+Perform a lookup of user account. The specified username is converted into a user ID. The username and user ID values 
+may be identical, however in typical deployments they are different. Client TLS certificate can also be used for user lookup.
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/user/lookup</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/user/lookup</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes during authentication:
 
@@ -110,13 +135,14 @@ The list of expected status codes during authentication:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### User lookup - request
 
 ```json
 {
   "requestObject": {
     "username": "user1234",
     "organizationId": "RETAIL",
+    "clientCertificate": "--- [CLIENT_CERTIFICATE] ---",
     "operationContext": {
       "id": "7662c638-9dc9-484c-a119-145b3685e623",
       "name": "authorize_payment",
@@ -197,7 +223,7 @@ The list of expected status codes during authentication:
 }
 ```
 
-### Response - user account exists
+#### User lookup response - user account exists
 
 ```json
 {
@@ -207,12 +233,13 @@ The list of expected status codes during authentication:
     "givenName": "John",
     "familyName": "Doe",
     "organizationId": "RETAIL",
-    "accountStatus": "ACTIVE"
+    "accountStatus": "ACTIVE",
+	"extras": {}  
   }
 }
 ```
 
-### Response - user account exists, however the account is not active (e.g. blocked)
+#### User lookup response - user account exists, however the account is not active (e.g. blocked)
 
 ```json
 {
@@ -227,7 +254,7 @@ The list of expected status codes during authentication:
 }
 ```
 
-### Response - user account does not exist
+#### User lookup response - user account does not exist
 
 ```json
 {
@@ -244,7 +271,7 @@ The list of expected status codes during authentication:
 Note that in SCA steps the implementations should hide this error, because the error could reveal which usernames are valid 
 and which are not.
 
-### Response - invalid input
+#### User lookup response - invalid input
 
 ```json
 {
@@ -263,21 +290,26 @@ and which are not.
   }
 }
 ```
+<!-- end -->
 
-## User Authentication
+<!-- begin api POST /api/auth/user/authenticate -->
+### User Authentication
 
-Performs an authentication operation with user ID and password. This method is not SCA compliant.
+Perform an authentication operation with user ID and password. This method is not SCA compliant.
 
+#### User authentication - parameters
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/user/authenticate</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/user/authenticate</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes during authentication:
 
@@ -286,13 +318,12 @@ The list of expected status codes during authentication:
 | 200  | OK response - user was successfully authenticated |
 | 400  | `INPUT_INVALID` - username and/or password has invalid format, unsupported authentication type |
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
-| 401  | `AUTHENTICATION_FAILED` - provide reason in the message in case it is available |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### User authentication - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -385,7 +416,7 @@ The list of expected status codes during authentication:
 }
 ```
 
-### User Password Encryption and Decryption
+#### User password encryption and decryption
 
 The `NO_PROTECTION` password protection type is used for plain text password in request (sent by default). 
 
@@ -435,53 +466,47 @@ private String decryptPassword(String secretKeyBase64, String cipherTransformati
 // Verify that decrypted password matches expected password
 ```
 
-### Response - authentication succeeded
+#### User authentication response - authentication succeeded
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK",
   "responseObject": {
     "authenticationResult": "SUCCEEDED",
-    "userDetail": {
-      "id": "12345678",
-      "givenName": "John",
-      "familyName": "Doe",
-      "organizationId": "RETAIL",
-      "accountStatus": "ACTIVE"
-    },
     "errorMessage": null,
     "remainingAttempts": null,
-    "showRemainingAttempts": false
+    "showRemainingAttempts": false,
+    "accountStatus": "ACTIVE"
   }
 }
 ```
 
-### Response - authentication failed
+#### User authentication response - authentication failed
 
 This message should be sent when the Data Adapter receives a correct message, however the username and password combination is invalid.
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK",
   "responseObject": {
     "authenticationResult": "FAILED",
-    "userDetail": null,
     "errorMessage": "login.authenticationFailed",
     "remainingAttempts": null,
-    "showRemainingAttempts": false
+    "showRemainingAttempts": false,
+    "accountStatus": "ACTIVE"
   }
 }
 ```
 
-### Response - input validation errors
+#### User authentication response - input validation errors
 
 This error should be returned when username or password format is invalid - either it contains unsupported characters or it is empty or too long. This error is also used when authentication type is not supported.
 
@@ -489,7 +514,7 @@ The sample response below is returned when password is empty.
 
 - Status Code: `400`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -511,13 +536,13 @@ The sample response below is returned when password is empty.
 
 For more information, see classes `AuthenticationRequestValidator` and `DefaultExceptionResolver`.
 
-### Response - internal error
+#### User authentication response - internal error
 
 This error should be used for all unexpected errors.
 
 - Status Code: `500`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -530,21 +555,26 @@ This error should be used for all unexpected errors.
   }
 }
 ```
+<!-- end -->
 
-## User Information
+<!-- begin api POST /api/auth/user/info -->
+### User Information
 
-Fetches user details based on user ID.
+Fetch user details based on user ID.
 
+### User information - parameters
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/user/info</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/user/info</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -556,10 +586,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### User information - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -570,11 +600,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - user info successfully retrieved
+#### User information response - user info successfully retrieved
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -588,23 +618,125 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Decorate Form Data
+## Authentication Method API
+
+<!-- begin api POST /api/auth/method/init -->
+### Initialize an Authentication Method
+
+Initialize an authentication method and set its parameters, e.g. client certificate configuration.
+
+#### Initialize an authentication method - parameters
+
+<!-- begin remove -->
+<table>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/method/init</code></td>
+  </tr>
+</table>
+<!-- end -->
+
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - user details have been successfully retrieved |
+| 400  | `INPUT_INVALID` - request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
+| 500  | Server errors - provide error details in the message, this is only for unexpected errors |
+
+#### Initialize an authentication method - request
+
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "requestObject": {
+    "userId": null,
+    "organizationId": null,
+    "authMethod": "LOGIN_SCA",
+    "operationContext": {
+      "id": "fd598c95-c7a4-4d66-9cf6-0262b8a71693",
+      "name": "login_sca",
+      "data": "A2",
+      "externalTransactionId": null,
+      "formData": {
+        "title": {
+          "id": "login.title",
+          "message": "Login"
+        },
+        "greeting": {
+          "id": "login.greeting",
+          "message": "Hello,\nplease sign in."
+        },
+        "summary": {
+          "id": "login.summary",
+          "message": "Please confirm the login attempt."
+        },
+        "config": [],
+        "banners": [],
+        "parameters": [],
+        "userInput": {}
+      },
+      "applicationContext": {
+        "id": "democlient",
+        "name": "democlient",
+        "description": "App with client ID: democlient",
+        "originalScopes": [
+          "aisp"
+        ],
+        "extras": {}
+      }
+    }
+  }
+}
+```
+
+#### Initialize an authentication method - response - authentication method was initialized
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "certificateAuthenticationMode": "NOT_AVAILABLE",
+    "certificateVerificationUrl": null
+  }
+}
+```
+<!-- end -->
+
+## Operation API
+
+<!-- begin api POST /api/operation/formdata/decorate -->
+### Decorate Form Data
 
 Retrieve form data and decorate it (optional).
 
-### Request parameters
+#### Decorate form data - parameters
 
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/operation/formdata/decorate</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/operation/formdata/decorate</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -616,17 +748,18 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### Decorate form data - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "requestObject": {
     "userId": "12345678",
     "organizationId": "RETAIL",
-    "operationContext": {
+    "authMethod": "LOGIN_SCA",
+	"operationContext": {
       "id": "371526cc-5dee-414e-8418-5ee1c5ef2d67",
       "name": "authorize_payment",
       "data": "A1*A100CZK*Q238400856/0300**D20190629*NUtility Bill Payment - 05/2019",
@@ -707,11 +840,11 @@ The list of expected status codes:
 }
 ```
 
-### Response
+#### Decorate form data - response
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -819,23 +952,27 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## FormData Change Notification
+<!-- begin api POST /api/operation/formdata/change -->
+### FormData Change Notification
 
 Notification of Data Adapter about formData change.
 
-### Request parameters
+#### FormData change notification - parameters
 
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/operation/formdata/change</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/operation/formdata/change</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -846,10 +983,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### FormData change notification - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -942,34 +1079,38 @@ The list of expected status codes:
 }
 ```
 
-### Response
+#### FormData change notification - response
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK"
 }
 ```
+<!-- end -->
 
-## Operation Change Notification
+<!-- begin api POST /api/operation/change -->
+### Operation Change Notification
 
 Notification of Data Adapter about operation change.
 
-### Request parameters
+#### Operation change notification - parameters
 
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/operation/change</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/operation/change</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -980,12 +1121,12 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Request
+#### Operation change notification - request
 
 Possible operation changes are: `DONE`, `CANCELED` and `FAILED`.
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1076,32 +1217,290 @@ Possible operation changes are: `DONE`, `CANCELED` and `FAILED`.
 }
 ```
 
-### Response
+#### Operation change notification - response
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK"
 }
 ```
+<!-- end -->
 
-## Generate SMS Authorization Code
+<!-- begin api POST /api/operation/create -->
+### Create Implicit Login Operation
 
-### Generate SMS authorization code - request parameters
+Create an implicit login operation when accessing Web Flow without a previously created operation.
 
+#### Create implicit login operation - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/sms/create</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/operation/create</code></td>
+  </tr>
 </table>
+<!-- end -->
+
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - notification was successfully received |
+| 400  | `INPUT_INVALID` - request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
+| 500  | Server errors - provide error details in the message, this is only for unexpected errors |
+
+#### Create implicit login operation - request
+
+Possible operation changes are: `DONE`, `CANCELED` and `FAILED`.
+
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "requestObject": {
+    "clientId": "democlient",
+    "scopes": [
+      "aisp"
+    ]
+  }
+}
+```
+
+#### Create implicit login operation - response
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "name": "login_sca",
+    "formData": {
+      "title": {
+        "id": "login.title",
+        "message": null
+      },
+      "greeting": {
+        "id": "login.greeting",
+        "message": null
+      },
+      "summary": {
+        "id": "login.summary",
+        "message": null
+      },
+      "config": [],
+      "banners": [],
+      "parameters": [],
+      "userInput": {}
+    },
+    "applicationContext": {
+      "id": "democlient",
+      "name": "democlient",
+      "description": "App with client ID: democlient",
+      "originalScopes": [
+        "aisp"
+      ],
+      "extras": {}
+    }
+  }
+}
+```
+<!-- end -->
+
+<!-- begin api POST /api/operation/mapping -->
+### Operation Mapping
+
+Mapping of complex Next Step operations into individual operations. PowerAuth operation template can be configured using the `templateName` parameter in response.
+
+#### Operation mapping - parameters
+
+<!-- begin remove -->
+<table>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/operation/mapping</code></td>
+  </tr>
+</table>
+<!-- end -->
+
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - notification was successfully received |
+| 400  | `INPUT_INVALID` - request validation errors |
+| 500  | Server errors - provide error details in the message, this is only for unexpected errors |
+
+#### Operation mapping - request
+
+Possible operation changes are: `DONE`, `CANCELED` and `FAILED`.
+
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "requestObject": {
+    "userId": "12345678",
+    "organizationId": "RETAIL",
+    "authMethod": "LOGIN_SCA",
+    "operationContext": {
+      "id": "c02c5ea8-d4da-4499-9a27-aa4ded70921b",
+      "name": "authorize_payment",
+      "data": "A1*A100CZK*Q238400856/0300**D20190629*NUtility Bill Payment - 05/2019",
+      "formData": {
+        "title": {
+          "id": "operation.title",
+          "message": "Confirm Payment"
+        },
+        "greeting": {
+          "id": "operation.greeting",
+          "message": "Hello,\nplease confirm following payment:"
+        },
+        "summary": {
+          "id": "operation.summary",
+          "message": "Hello, please confirm payment 100 CZK to account 238400856/0300."
+        },
+        "config": [],
+        "banners": [],
+        "parameters": [
+          {
+            "type": "AMOUNT",
+            "id": "operation.amount",
+            "label": "Amount",
+            "valueFormatType": "AMOUNT",
+            "formattedValues": {
+              "amount": "100.00",
+              "currency": "CZK"
+            },
+            "amount": 100,
+            "currency": "CZK",
+            "currencyId": "operation.currency"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.account",
+            "label": "To Account",
+            "valueFormatType": "ACCOUNT",
+            "formattedValues": {
+              "value": "238400856/0300"
+            },
+            "value": "238400856/0300"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.dueDate",
+            "label": "Due Date",
+            "valueFormatType": "DATE",
+            "formattedValues": {
+              "value": "Jun 29, 2019"
+            },
+            "value": "2019-06-29"
+          },
+          {
+            "type": "NOTE",
+            "id": "operation.note",
+            "label": "Note",
+            "valueFormatType": "TEXT",
+            "formattedValues": {
+              "value": "Utility Bill Payment - 05/2019"
+            },
+            "note": "Utility Bill Payment - 05/2019"
+          }
+        ],
+        "userInput": {
+          "operation.bankAccountChoice": "CZ4012340000000012345678",
+          "operation.bankAccountChoice.disabled": "true"
+        }
+      },
+      "applicationContext": {
+        "id": "democlient",
+        "name": "Demo application",
+        "description": "Web Flow demo application",
+        "originalScopes": ["pisp"], 
+        "extras": {
+          "applicationOwner": "Wultra"
+        }
+      }
+    }
+  }
+}
+```
+
+#### Operation mapping - response
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "templateName": "login",
+    "operationName": "login",
+    "operationData": "A2",
+    "formData": {
+      "title": {
+        "id": "login.title",
+        "message": null
+      },
+      "greeting": {
+        "id": "login.greeting",
+        "message": null
+      },
+      "summary": {
+        "id": "login.summary",
+        "message": null
+      },
+      "config": [],
+      "banners": [],
+      "parameters": [],
+      "userInput": {}
+    }
+  }
+}
+```
+<!-- end -->
+
+## Authentication API
+
+<!-- begin api POST /api/auth/sms/create -->
+### Generate and Send SMS Authorization Code
+
+Generate an OTP authorization code, store it in the database and send a SMS message to the user.
+
+#### Generate and send SMS authorization code - parameters
+
+<!-- begin remove -->
+<table>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/sms/create</code></td>
+  </tr>
+</table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -1112,10 +1511,171 @@ The list of expected status codes:
 | 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Create SMS - request
+#### Generate and send SMS authorization code - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
+
+```json
+{
+  "requestObject": {
+    "userId": "12345678",
+    "organizationId": "RETAIL",
+    "accountStatus": "ACTIVE",
+	"authMethod": "LOGIN_SCA",
+    "operationContext": {
+      "id": "371526cc-5dee-414e-8418-5ee1c5ef2d67",
+      "name": "authorize_payment",
+      "data": "A1*A100CZK*Q238400856/0300**D20190629*NUtility Bill Payment - 05/2019",
+      "formData": {
+        "title": {
+          "id": "operation.title",
+          "message": "Confirm Payment"
+        },
+        "greeting": {
+          "id": "operation.greeting",
+          "message": "Hello,\nplease confirm following payment:"
+        },
+        "summary": {
+          "id": "operation.summary",
+          "message": "Hello, please confirm payment 100 CZK to account 238400856/0300."
+        },
+        "config": [],
+        "banners": [],
+        "parameters": [
+          {
+            "type": "AMOUNT",
+            "id": "operation.amount",
+            "label": "Amount",
+            "valueFormatType": "AMOUNT",
+            "formattedValues": {
+              "amount": "100.00",
+              "currency": "CZK"
+            },
+            "amount": 100,
+            "currency": "CZK",
+            "currencyId": "operation.currency"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.account",
+            "label": "To Account",
+            "valueFormatType": "ACCOUNT",
+            "formattedValues": {
+              "value": "238400856/0300"
+            },
+            "value": "238400856/0300"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.dueDate",
+            "label": "Due Date",
+            "valueFormatType": "DATE",
+            "formattedValues": {
+              "value": "Jun 29, 2019"
+            },
+            "value": "2019-06-29"
+          },
+          {
+            "type": "NOTE",
+            "id": "operation.note",
+            "label": "Note",
+            "valueFormatType": "TEXT",
+            "formattedValues": {
+              "value": "Utility Bill Payment - 05/2019"
+            },
+            "note": "Utility Bill Payment - 05/2019"
+          }
+        ],
+        "userInput": {
+          "operation.bankAccountChoice": "CZ4012340000000012345678",
+          "operation.bankAccountChoice.disabled": "true"
+        }
+      },
+      "applicationContext": {
+        "id": "democlient",
+        "name": "Demo application",
+        "description": "Web Flow demo application",
+        "originalScopes": ["pisp"], 
+        "extras": {
+          "applicationOwner": "Wultra"
+        }
+      }
+    },
+    "lang": "en",
+    "resend": false
+  }
+}
+```
+
+#### Generate and send SMS authorization code response - SMS has been successfully created and sent
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "messageId": "d056ec42-2349-43a1-9af4-cc502d924f76",
+    "smsDeliveryResult": "SUCCEEDED",
+    "errorMessage": null
+  }
+}
+```
+
+#### Generate and send SMS authorization code response - SMS could not be sent
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+  
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "messageId": "d056ec42-2349-43a1-9af4-cc502d924f76",
+    "smsDeliveryResult": "FAILED",
+    "errorMessage": null
+  }
+}
+```
+<!-- end -->
+
+<!-- begin api POST /api/auth/sms/send -->
+### Send SMS Authorization Code
+
+Send an SMS message with previously generated OTP authorization code to the user.
+
+#### Send SMS authorization code - parameters
+
+<!-- begin remove -->
+<table>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/sms/send</code></td>
+  </tr>
+</table>
+<!-- end -->
+
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - SMS message has been successfully created |
+| 400  | `INPUT_INVALID` - request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
+| 500  | Server errors - provide error details in the message, this is only for unexpected errors |
+
+#### Send SMS authorization code - request
+
+- Headers:
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1202,34 +1762,37 @@ The list of expected status codes:
         }
       }
     },
-    "lang": "en"
+  "messageId": "e82318ea-d8c6-11eb-b8bc-0242ac130003",
+  "authorizationCode": "54741284",
+  "lang": "en",
+  "resend": false
   }
 }
 ```
 
-### Success response - SMS has been successfully created
+#### Send SMS authorization code response - SMS has been successfully sent
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK",
   "responseObject": {
-    "messageId": "d056ec42-2349-43a1-9af4-cc502d924f76",
+    "messageId": "e82318ea-d8c6-11eb-b8bc-0242ac130003",
     "smsDeliveryResult": "SUCCEEDED",
     "errorMessage": null
   }
 }
 ```
 
-### Error response - SMS could not be sent
+#### Send SMS authorization code response - SMS could not be sent
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
-	
+  - `Content-Type: application/json`
+
 ```json
 {
   "status": "OK",
@@ -1240,35 +1803,41 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Verify Authorization SMS Code
+<!-- begin api POST /api/auth/sms/verify -->
+### Verify Authorization SMS Code
 
-### Verify SMS code - request parameters
+Verify an authorization OTP code from a SMS message.
 
+### Verify authorization SMS code - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/sms/verify</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/sms/verify</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
 | Code | Description |
 |------|-------------|
 | 200  | OK response - SMS authorization code has been successfully verified |
-| 400  | `INPUT_INVALID` - request validation errors  |
-| 401  | `SMS_AUTHORIZATION_FAILED` - the SMS authorization code is invalid |
+| 400  | `INPUT_INVALID` -   request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Verify SMS - request
+#### Verify authorization SMS code - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1361,11 +1930,11 @@ The list of expected status codes:
 }
 ```
 
-### Success response - SMS authorization code has been successfully verified
+#### Verify authorization SMS code response - SMS authorization code has been successfully verified
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1379,7 +1948,7 @@ The list of expected status codes:
 }
 ```
 
-### Error response - SMS authorization code verification failed
+#### Verify authorization SMS code response - SMS authorization code verification failed
 
 ```json
 {
@@ -1392,30 +1961,35 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Verify Authorization SMS Code and Password
+<!-- begin api POST /api/auth/sms/password/verify -->
+### Verify Authorization SMS Code and Password
 
-### Verify SMS code and password - request parameters
+Verify an authorization OTP code from a SMS message together with user password.
 
+#### Verify authorization SMS code and password - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/sms/password/verify</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/sms/password/verify</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
 | Code | Description |
 |------|-------------|
 | 200  | OK response - SMS authorization code has been successfully verified |
-| 400  | `INPUT_INVALID` - request validation errors  |
-| 401  | `SMS_AUTHORIZATION_FAILED` - the SMS authorization code is invalid |
-| 401  | `AUTHENTICATION_FAILED` - password verification failed |
+| 400  | `INPUT_INVALID` -   request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
 The password can be optionally encrypted. In this case the `passwordProtection` parameter provides information about
@@ -1423,10 +1997,10 @@ type of encryption and the `cipherTransformation` parameter contains information
 
 See chapter [User Password Encryption and Decryption](./Data-Adapter-REST-API-Reference.md#user-password-encryption-and-decryption) for additional details.
 
-### Verify SMS and password - request
+#### Verify authorization SMS code and password - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1525,11 +2099,11 @@ See chapter [User Password Encryption and Decryption](./Data-Adapter-REST-API-Re
 }
 ```
 
-### Success response - SMS authorization code and password have been successfully verified
+#### Verify authorization SMS code and password response - SMS authorization code and password have been successfully verified
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1544,12 +2118,12 @@ See chapter [User Password Encryption and Decryption](./Data-Adapter-REST-API-Re
 }
 ```
 
-### Error response - SMS authorization code and/or password verification failed
+#### Verify authorization SMS code and password response - SMS authorization code and/or password verification failed
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
-	
+  - `Content-Type: application/json`
+  
 ```json
 {
   "status": "OK",
@@ -1562,21 +2136,176 @@ See chapter [User Password Encryption and Decryption](./Data-Adapter-REST-API-Re
   }
 }
 ```
+<!-- end -->
 
-## Initialize OAuth 2.0 Consent Form
+<!-- begin api POST /api/auth/certificate/verify -->
+### Verify a Client TLS Certificate
 
-### Initialize consent form - request parameters
+Verify a client TLS certificate for user authentication.
 
+#### Verify a client TLS certificate - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/consent/init</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/certificate/verify</code></td>
+  </tr>
 </table>
+<!-- end -->
+
+The list of expected status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | OK response - SMS authorization code has been successfully verified |
+| 400  | `INPUT_INVALID` -   request validation errors |
+| 400  | `OPERATION_CONTEXT_INVALID` - invalid operation context |
+| 500  | Server errors - provide error details in the message, this is only for unexpected errors |
+
+#### Verify a client TLS certificate - request
+
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "requestObject": {
+  "clientCertificate": "--- [CLIENT_TLS_CERTIFICATE] ---",
+  "authMethod": "LOGIN_SCA",
+    "userId": "12345678",
+    "organizationId": "RETAIL",
+    "accountStatus": "ACTIVE",
+    "operationContext": {
+      "id": "371526cc-5dee-414e-8418-5ee1c5ef2d67",
+      "name": "authorize_payment",
+      "data": "A1*A100CZK*Q238400856/0300**D20190629*NUtility Bill Payment - 05/2019",
+      "formData": {
+        "title": {
+          "id": "operation.title",
+          "message": "Confirm Payment"
+        },
+        "greeting": {
+          "id": "operation.greeting",
+          "message": "Hello,\nplease confirm following payment:"
+        },
+        "summary": {
+          "id": "operation.summary",
+          "message": "Hello, please confirm payment 100 CZK to account 238400856/0300."
+        },
+        "config": [],
+        "banners": [],
+        "parameters": [
+          {
+            "type": "AMOUNT",
+            "id": "operation.amount",
+            "label": "Amount",
+            "valueFormatType": "AMOUNT",
+            "formattedValues": {
+              "amount": "100.00",
+              "currency": "CZK"
+            },
+            "amount": 100,
+            "currency": "CZK",
+            "currencyId": "operation.currency"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.account",
+            "label": "To Account",
+            "valueFormatType": "ACCOUNT",
+            "formattedValues": {
+              "value": "238400856/0300"
+            },
+            "value": "238400856/0300"
+          },
+          {
+            "type": "KEY_VALUE",
+            "id": "operation.dueDate",
+            "label": "Due Date",
+            "valueFormatType": "DATE",
+            "formattedValues": {
+              "value": "Jun 29, 2019"
+            },
+            "value": "2019-06-29"
+          },
+          {
+            "type": "NOTE",
+            "id": "operation.note",
+            "label": "Note",
+            "valueFormatType": "TEXT",
+            "formattedValues": {
+              "value": "Utility Bill Payment - 05/2019"
+            },
+            "note": "Utility Bill Payment - 05/2019"
+          }
+        ],
+        "userInput": {
+          "operation.bankAccountChoice": "CZ4012340000000012345678",
+          "operation.bankAccountChoice.disabled": "true"
+        }
+      },
+      "applicationContext": {
+        "id": "democlient",
+        "name": "Demo application",
+        "description": "Web Flow demo application",
+        "originalScopes": ["pisp"], 
+        "extras": {
+          "applicationOwner": "Wultra"
+        }
+      }
+    }
+  }
+}
+```
+
+#### Verify a client TLS certificate response - client TLS certificate has been verified, verification result is sent in response
+
+- Status Code: `200`
+- Headers:
+  - `Content-Type: application/json`
+
+```json
+{
+  "status": "OK",
+  "responseObject": {
+    "certificateVerificationResult": "SUCCEEDED",
+    "errorMessage": null,
+    "remainingAttempts": null,
+    "showRemainingAttempts": false, 
+  "accountStatus": "ACTIVE"
+  }
+}
+```
+
+In case the client TLS certificate verification fails, the parameter `certificateVerificationResult` value is set to `FAILED`.
+<!-- end -->
+
+## Consent API
+
+<!-- begin api POST /api/auth/consent/init -->
+### Initialize OAuth 2.0 Consent Form
+
+Initialize the OAuth 2.0 consent form and get information whether consent form should be displayed.
+
+#### Initialize OAuth 2.0 consent form - parameters
+
+<!-- begin remove -->
+<table>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/consent/init</code></td>
+  </tr>
+</table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -1588,10 +2317,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Create consent form - request
+#### Initialize OAuth 2.0 consent form - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1681,51 +2410,41 @@ The list of expected status codes:
 }
 ```
 
-### Response - consent form has been successfully created
+#### Initialize OAuth 2.0 consent form response - consent form has been successfully initialized
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
   "status": "OK",
   "responseObject": {
-    "consentHtml": "I consent that I have initiated this payment request and give consent to complete the operation.",
-    "options": [
-      {
-        "id": "CONSENT_INIT",
-        "descriptionHtml": "I consent that I have initiated this payment operation.",
-        "required": true,
-        "defaultValue": "NOT_CHECKED",
-        "value": null
-      },
-      {
-        "id": "CONSENT_PAYMENT",
-        "descriptionHtml": "I give consent to complete this payment operation.",
-        "required": true,
-        "defaultValue": "NOT_CHECKED",
-        "value": null
-      }
-    ]
+    "shouldDisplayConsentForm": true
   }
 }
 ```
+<!-- end -->
 
-## Create OAuth 2.0 Consent Form
+<!-- begin api POST /api/auth/consent/create -->
+### Create OAuth 2.0 Consent Form
 
-### Create consent form - request parameters
+Create the OAuth 2.0 consent form and obtain form options.
 
+#### Create OAuth 2.0 consent form - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/consent/create</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/consent/create</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -1737,10 +2456,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Create consent form - request
+#### Create OAuth 2.0 consent form - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1831,11 +2550,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - consent form has been successfully created
+#### Create OAuth 2.0 consent form response - consent form has been successfully created
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1861,21 +2580,27 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Validate OAuth 2.0 Consent Form
+<!-- begin api POST /api/auth/consent/validate -->
+### Validate OAuth 2.0 Consent Form
 
-### Validate consent form - request parameters
+Validate submitted options in the OAuth 2.0 consent form.
 
+#### Validate OAuth 2.0 consent form - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/consent/validate</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/consent/validate</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -1888,10 +2613,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Validate consent form - request
+#### Validate consent form - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -1998,11 +2723,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - consent form has been successfully validated
+#### Validate consent form response - consent form has been successfully validated
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2015,11 +2740,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - consent form options validation failed
+#### Validate consent form response - consent form options validation failed
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2042,21 +2767,27 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Save OAuth 2.0 Consent Form
+<!-- begin api POST /api/auth/consent/save -->
+### Save OAuth 2.0 Consent Form
 
-### Save consent form - request parameters
+Save the OAuth 2.0 consent form options.
 
+#### Save OAuth 2.0 consent form - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/auth/consent/save</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/auth/consent/save</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -2069,10 +2800,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Save consent form - request
+#### Save OAuth 2.0 consent form - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2178,11 +2909,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - consent form has been successfully saved
+#### Save OAuth 2.0 consent form response - consent form has been successfully saved
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2193,11 +2924,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - the processing was correct however consent form could not be saved at this time
+#### Save OAuth 2.0 consent form response - the processing was correct however consent form could not be saved at this time
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2207,21 +2938,29 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
 
-## Execute an AFS action
+## AFS API
 
-### Execute an AFS action - request parameters
+<!-- begin api POST /api/afs/action/execute -->
+### Execute an AFS Action
 
+Execute an AFS action using the remote anti-fraud system.
+
+#### Execute an AFS action - parameters
+
+<!-- begin remove -->
 <table>
-	<tr>
-		<td>Method</td>
-		<td><code>POST</code></td>
-	</tr>
-	<tr>
-		<td>Resource URI</td>
-		<td><code>/api/afs/action/execute</code></td>
-	</tr>
+  <tr>
+    <td>Method</td>
+    <td><code>POST</code></td>
+  </tr>
+  <tr>
+    <td>Resource URI</td>
+    <td><code>/api/afs/action/execute</code></td>
+  </tr>
 </table>
+<!-- end -->
 
 The list of expected status codes:
 
@@ -2232,10 +2971,10 @@ The list of expected status codes:
 | 400  | `REMOTE_ERROR` - communication with remote system failed |
 | 500  | Server errors - provide error details in the message, this is only for unexpected errors |
 
-### Execute an AFS action - request
+#### Execute an AFS action - request
 
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2342,11 +3081,11 @@ The list of expected status codes:
 }
 ```
 
-### Response - AFS action was successfully executed
+#### Execute an AFS action response - AFS action was successfully executed
 
 - Status Code: `200`
 - Headers:
-	- `Content-Type: application/json`
+  - `Content-Type: application/json`
 
 ```json
 {
@@ -2362,3 +3101,6 @@ The list of expected status codes:
   }
 }
 ```
+<!-- end -->
+
+<!-- end -->
